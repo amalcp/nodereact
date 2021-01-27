@@ -1,0 +1,73 @@
+version: "3.3"
+services:
+
+  nginx:
+    image: adminpanel_nginx:latest
+    hostname: nginx
+    depends_on:
+      - client
+      - backend
+    restart: always 
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    ports:
+      - '80:80'
+    networks:
+      - demo
+  
+  client:
+    image: adminpanel_client:latest
+    hostname: client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+     - '3000:3000'
+    environment:
+      - BASEURL=http://backend:5000
+    volumes:
+      - /app/node_modules 
+    restart: on-failure
+    container_name: client
+    networks:
+      - demo
+  
+  backend:
+    hostname: backend
+    image: adminpanel_backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+     - '5000:5000'
+    environment:
+      - MONGO_URI=mongodb://admin:admin@mongo:27017
+      - MONGO_DB=test
+    restart: on-failure
+    container_name: backend
+    volumes:
+      - /app/node_modules 
+    # env_file:
+    #   - ./env/backend.env
+    networks:
+      - demo
+    
+  mongo:
+    image: 'mongo'
+    hostname: mongo
+    ports:
+      - '27017:27017'
+    environment:
+      - MONGO_INITDB_DATABASE=test
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+    volumes: 
+      - /data/db
+    networks:
+      - demo
+      # - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    # env_file:
+    #   - ./env/mongo.env
+networks:
+  demo:
